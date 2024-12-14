@@ -1,14 +1,12 @@
 local composer = require("composer")
 local scene = composer.newScene()
 
--- Variáveis para armazenar moléculas e fases
 local molecules = {}
 local stages = {}
 local accelerometerEvent
-local lastMessageTime = 0 -- Controle de tempo da mensagem
-local messageInterval = 5000 -- Intervalo de 5 segundos entre mensagens
+local lastMessageTime = 0
+local messageInterval = 5000
 
--- Função para criar as moléculas
 local function createMolecules(sceneGroup)
     local moleculeData = {{
         filename = "Assets/imagens/carbono.png",
@@ -24,12 +22,11 @@ local function createMolecules(sceneGroup)
         local molecule = display.newImageRect(sceneGroup, data.filename, 50, 50)
         molecule.x = data.x
         molecule.y = data.y
-        molecule.stageIndex = 1 -- Começa na primeira fase
+        molecule.stageIndex = 1
         table.insert(molecules, molecule)
     end
 end
 
--- Função para criar as fases do ciclo
 local function createStages(sceneGroup)
     local stageData = {{
         name = "Planta",
@@ -53,11 +50,10 @@ local function createStages(sceneGroup)
     end
 end
 
--- Função para detectar a conclusão do ciclo
 local function checkCycleCompletion()
     for _, molecule in ipairs(molecules) do
         if molecule.stageIndex < #stages then
-            return false -- Ainda não passou por todas as etapas
+            return false
         end
     end
 
@@ -65,7 +61,6 @@ local function checkCycleCompletion()
     if currentTime - lastMessageTime > messageInterval then
         lastMessageTime = currentTime
 
-        -- Se todas as moléculas completarem o ciclo
         local completionMessage = display.newText({
             text = "Ciclo Completo! Biodiversidade em Equilíbrio!",
             x = display.contentCenterX,
@@ -75,7 +70,6 @@ local function checkCycleCompletion()
         })
         completionMessage:setFillColor(0, 1, 0)
 
-        -- Animação de conclusão
         transition.scaleTo(completionMessage, {
             xScale = 1.5,
             yScale = 1.5,
@@ -87,13 +81,11 @@ local function checkCycleCompletion()
     end
 end
 
--- Evento do acelerômetro para movimentar as moléculas
 local function onAccelerometer(event)
     for _, molecule in ipairs(molecules) do
-        molecule.x = molecule.x + (event.xGravity * 11) -- Velocidade aumentada em 10%
+        molecule.x = molecule.x + (event.xGravity * 11)
         molecule.y = molecule.y - (event.yGravity * 11)
 
-        -- Limitar movimento às bordas da tela
         if molecule.x < 0 then
             molecule.x = 0
         elseif molecule.x > display.contentWidth then
@@ -106,15 +98,14 @@ local function onAccelerometer(event)
             molecule.y = display.contentHeight
         end
 
-        -- Verificar se a molécula está sobre uma fase
         for i, stage in ipairs(stages) do
             local dx = molecule.x - stage.x
             local dy = molecule.y - stage.y
             local distance = math.sqrt(dx * dx + dy * dy)
 
             if distance < 60 and molecule.stageIndex == i then
-                molecule.stageIndex = molecule.stageIndex + 1 -- Avançar para a próxima fase
-                molecule:setFillColor(0, 1, 0) -- Mudar cor para indicar progresso
+                molecule.stageIndex = molecule.stageIndex + 1
+                molecule:setFillColor(0, 1, 0)
                 break
             end
         end
@@ -123,21 +114,17 @@ local function onAccelerometer(event)
     checkCycleCompletion()
 end
 
--- Cena: criar
 function scene:create(event)
     local sceneGroup = self.view
 
-    -- Fundo
     local imgFundo = display.newImageRect(sceneGroup, "Assets/imagens/Pag4.png", display.contentWidth,
         display.contentHeight)
     imgFundo.x = display.contentCenterX
     imgFundo.y = display.contentCenterY
 
-    -- Criar moléculas e fases
     createMolecules(sceneGroup)
     createStages(sceneGroup)
 
-    -- Botões de navegação
     local Avancar = display.newImageRect(sceneGroup, "Assets/imagens/botaoProximo.png", 141, 50)
     Avancar.x = display.contentCenterX + 300
     Avancar.y = display.contentHeight - 100
@@ -191,7 +178,6 @@ function scene:create(event)
 
 end
 
--- show()
 function scene:show(event)
     local sceneGroup = self.view
     local phase = event.phase
@@ -209,7 +195,6 @@ function scene:show(event)
     end
 end
 
--- hide()
 function scene:hide(event)
     local sceneGroup = self.view
     local phase = event.phase
@@ -218,7 +203,6 @@ function scene:hide(event)
         if somChannel then
             audio.pause(somChannel)
         end
-    elseif (phase == "did") then
     end
 end
 
@@ -230,30 +214,6 @@ function scene:destroy(event)
     if somPag4 then
         audio.dispose(somPag4)
     end
-end
-
-
--- Cena: exibir
-function scene:show(event)
-    local phase = event.phase
-    if phase == "did" then
-        -- Ativar acelerômetro
-        Runtime:addEventListener("accelerometer", onAccelerometer)
-    end
-end
-
--- Cena: esconder
-function scene:hide(event)
-    local phase = event.phase
-    if phase == "will" then
-        -- Remover o acelerômetro ao sair da cena
-        Runtime:removeEventListener("accelerometer", onAccelerometer)
-    end
-end
-
--- Cena: destruir
-function scene:destroy(event)
-    -- Limpeza de recursos
 end
 
 scene:addEventListener("create", scene)

@@ -1,6 +1,26 @@
 local composer = require("composer")
 local scene = composer.newScene()
 
+local somChannel
+local somPag2
+local somLigado = false -- Som começa desligado por padrão
+
+local button -- Declara o botão de som para poder manipulá-lo globalmente
+
+local function updateSoundIcon()
+    if somLigado then
+        button.fill = {
+            type = "image",
+            filename = "Assets/imagens/on.png"
+        }
+    else
+        button.fill = {
+            type = "image",
+            filename = "Assets/imagens/off.png"
+        }
+    end
+end
+
 local function dragObject(event)
     local object = event.target
     if event.phase == "began" then
@@ -46,6 +66,11 @@ function scene:create(event)
     Avancar.x = display.contentCenterX + 300
     Avancar.y = display.contentHeight - 100
     Avancar:addEventListener("tap", function()
+        somLigado = false -- Define som como desligado
+        updateSoundIcon() -- Atualiza o ícone do som
+        if somChannel then
+            audio.pause(somChannel) -- Pausa o som
+        end
         composer.gotoScene("Page03", {
             effect = "fromRight",
             time = 1000
@@ -57,13 +82,19 @@ function scene:create(event)
     Voltar.x = display.contentCenterX - 300
     Voltar.y = display.contentHeight - 100
     Voltar:addEventListener("tap", function()
+        somLigado = false -- Define som como desligado
+        updateSoundIcon() -- Atualiza o ícone do som
+        if somChannel then
+            audio.pause(somChannel) -- Pausa o som
+        end
         composer.gotoScene("Page01", {
             effect = "fromLeft",
             time = 1000
         })
     end)
 
-    local button = display.newImageRect(sceneGroup, "Assets/imagens/off.png", 60, 60)
+    -- Botão de som
+    button = display.newImageRect(sceneGroup, "Assets/imagens/off.png", 60, 60) -- Começa no estado "off"
     button.x = 70
     button.y = 60
 
@@ -71,26 +102,22 @@ function scene:create(event)
         somPag2 = audio.loadSound("Assets/audios/audioPagina2.mp3")
     end
 
+    -- Função de alternância do som
     local function toggleSound()
         if somLigado then
+            -- Desativa o som
             somLigado = false
-            button.fill = {
-                type = "image",
-                filename = "Assets/imagens/off.png"
-            }
             if somChannel then
                 audio.pause(somChannel)
             end
         else
+            -- Ativa o som
             somLigado = true
-            button.fill = {
-                type = "image",
-                filename = "Assets/imagens/on.png"
-            }
             somChannel = audio.play(somPag2, {
                 loops = -1
             })
         end
+        updateSoundIcon() -- Atualiza o ícone de acordo com o estado atual
     end
     button:addEventListener("tap", toggleSound)
 
@@ -126,7 +153,6 @@ end
 
 -- show()
 function scene:show(event)
-    local sceneGroup = self.view
     local phase = event.phase
 
     if (phase == "will") then
@@ -134,24 +160,18 @@ function scene:show(event)
             audio.pause(somChannel)
         end
     elseif (phase == "did") then
-        if somLigado then
-            somChannel = audio.play(somPag2, {
-                loops = -1
-            })
-        end
+        -- Som não será reproduzido automaticamente; depende do botão
     end
 end
 
 -- hide()
 function scene:hide(event)
-    local sceneGroup = self.view
     local phase = event.phase
 
     if (phase == "will") then
         if somChannel then
             audio.pause(somChannel)
         end
-    elseif (phase == "did") then
     end
 end
 
@@ -163,26 +183,6 @@ function scene:destroy(event)
     if somPag2 then
         audio.dispose(somPag2)
     end
-end
-
-function scene:show(event)
-    local phase = event.phase
-
-    if phase == "did" then
-        -- Qualquer código adicional quando a cena aparecer
-    end
-end
-
-function scene:hide(event)
-    local phase = event.phase
-
-    if phase == "will" then
-        -- Qualquer código adicional antes da cena desaparecer
-    end
-end
-
-function scene:destroy(event)
-    -- Limpeza de recursos da cena
 end
 
 scene:addEventListener("create", scene)

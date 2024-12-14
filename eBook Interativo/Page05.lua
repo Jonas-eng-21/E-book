@@ -8,6 +8,12 @@ local seedVelocity = 20
 local touchListenerAdded = false -- Controle do listener
 local treeOffsetX = 0 -- Controle do deslocamento no eixo X
 
+-- Variáveis de som
+local somPag5
+local somChannel
+local somLigado = false -- Som começa desligado por padrão
+local button -- Botão de som
+
 -- Função para criar o cenário degradado
 local function createBackground(sceneGroup)
     local background = display.newImageRect(sceneGroup, "Assets/imagens/Pag5.png", display.contentWidth,
@@ -97,11 +103,43 @@ local function createGround(sceneGroup)
     ground.name = "ground"
 end
 
+-- Função para atualizar o ícone de som
+local function updateSoundIcon()
+    if somLigado then
+        button.fill = {
+            type = "image",
+            filename = "Assets/imagens/on.png"
+        }
+    else
+        button.fill = {
+            type = "image",
+            filename = "Assets/imagens/off.png"
+        }
+    end
+end
+
+-- Função para alternar o som
+local function toggleSound()
+    if somLigado then
+        somLigado = false
+        updateSoundIcon() -- Atualiza o ícone do som
+        if somChannel then
+            audio.pause(somChannel)
+        end
+    else
+        somLigado = true
+        updateSoundIcon() -- Atualiza o ícone do som
+        somChannel = audio.play(somPag5, {
+            loops = -1
+        })
+    end
+end
+
 -- Criar a cena
 function scene:create(event)
     local sceneGroup = self.view
 
-    -- Adicionar física ao projeto
+    -- Iniciar a física antes de adicionar qualquer corpo
     physics.start()
     physics.setGravity(0, 9.8)
 

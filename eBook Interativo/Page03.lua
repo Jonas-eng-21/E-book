@@ -1,14 +1,42 @@
--- Ativar multiTouch
-system.activate("multitouch")
-
 local composer = require("composer")
 local scene = composer.newScene()
 
 -- Variáveis globais para som e controle
 local somPag3, somLigado, somChannel
-local touches = {} -- Armazena toques simultâneos
+local button -- Declaração do botão de som
 
--- Adiciona a flor e a massa na tela
+-- Função para atualizar o ícone do som
+local function updateSoundIcon()
+    if somLigado then
+        button.fill = {
+            type = "image",
+            filename = "Assets/imagens/on.png"
+        }
+    else
+        button.fill = {
+            type = "image",
+            filename = "Assets/imagens/off.png"
+        }
+    end
+end
+
+-- Função para alternar o som
+local function toggleSound()
+    if somLigado then
+        somLigado = false
+        updateSoundIcon() -- Atualiza o ícone de som para off
+        if somChannel then
+            audio.pause(somChannel) -- Pausa o som
+        end
+    else
+        somLigado = true
+        updateSoundIcon() -- Atualiza o ícone de som para on
+        somChannel = audio.play(somPag3, {
+            loops = -1
+        })
+    end
+end
+
 function scene:create(event)
     local sceneGroup = self.view
 
@@ -23,6 +51,10 @@ function scene:create(event)
     Avancar.x = display.contentCenterX + 300
     Avancar.y = display.contentHeight - 100
     Avancar:addEventListener("tap", function()
+        -- Pausa o som ao avançar
+        if somChannel then
+            audio.pause(somChannel)
+        end
         composer.gotoScene("Page04", {
             effect = "fromRight",
             time = 1000
@@ -33,6 +65,10 @@ function scene:create(event)
     Voltar.x = display.contentCenterX - 300
     Voltar.y = display.contentHeight - 100
     Voltar:addEventListener("tap", function()
+        -- Pausa o som ao voltar
+        if somChannel then
+            audio.pause(somChannel)
+        end
         composer.gotoScene("Page02", {
             effect = "fromLeft",
             time = 1000
@@ -40,7 +76,7 @@ function scene:create(event)
     end)
 
     -- Botão de som
-    local button = display.newImageRect(sceneGroup, "Assets/imagens/off.png", 60, 60)
+    button = display.newImageRect(sceneGroup, "Assets/imagens/off.png", 60, 60) -- Começa no estado "off"
     button.x = 70
     button.y = 60
 
@@ -48,27 +84,7 @@ function scene:create(event)
         somPag3 = audio.loadSound("Assets/audios/audioPagina3.mp3")
     end
 
-    local function toggleSound()
-        if somLigado then
-            somLigado = false
-            button.fill = {
-                type = "image",
-                filename = "Assets/imagens/off.png"
-            }
-            if somChannel then
-                audio.pause(somChannel)
-            end
-        else
-            somLigado = true
-            button.fill = {
-                type = "image",
-                filename = "Assets/imagens/on.png"
-            }
-            somChannel = audio.play(somPag3, {
-                loops = -1
-            })
-        end
-    end
+    -- Listener para alternar o som
     button:addEventListener("tap", toggleSound)
 
     -- Adicionar uma flor
@@ -84,100 +100,36 @@ function scene:create(event)
     scene.massa.fermentacaoAtiva = false
 end
 
--- Listener para multiTouch
-touchListener = function(event)
-    if event.phase == "began" then
-        touches[event.id] = true -- Armazena o toque
-
-        -- Verifica se existem dois toques ativos simultaneamente
-        local touchCount = 0
-        for _ in pairs(touches) do
-            touchCount = touchCount + 1
-        end
-
-        if touchCount == 2 then
-            -- Ativar eventos de polinização e fermentação
-            if scene.flor and not scene.flor.isPolinizada then
-                scene.flor.isPolinizada = true
-                local bee = display.newImageRect(scene.view, "Assets/imagens/bee.png", 40, 40)
-                bee.x, bee.y = scene.flor.x, scene.flor.y
-                transition.to(bee, {
-                    y = bee.y - 50,
-                    alpha = 0,
-                    time = 1000,
-                    onComplete = function()
-                        bee:removeSelf()
-                        scene.flor:setFillColor(0.5, 1, 0.5) -- Flor polinizada
-                    end
-                })
-            end
-
-            if scene.massa and not scene.massa.fermentacaoAtiva then
-                scene.massa.fermentacaoAtiva = true
-                scene.massa:scale(1.5, 1.5) -- Crescimento da massa
-                local message = display.newText({
-                    text = "A fermentação e a polinização ocorreram!",
-                    x = display.contentCenterX,
-                    y = display.contentHeight - 150,
-                    font = native.systemFontBold,
-                    fontSize = 24
-                })
-                message:setFillColor(0, 0.8, 0)
-                scene.view:insert(message)
-                transition.to(message, {
-                    alpha = 0,
-                    time = 2000,
-                    onComplete = function()
-                        message:removeSelf()
-                    end
-                })
-            end
-        end
-
-    elseif event.phase == "ended" or event.phase == "cancelled" then
-        touches[event.id] = nil -- Remove o toque
-    end
-    return true
-end
-
--- show()
 function scene:show(event)
-    local sceneGroup = self.view
     local phase = event.phase
-
     if phase == "will" then
         if somChannel then
-            audio.pause(somChannel)
+            audio.pause(somChannel) -- Pausa o som ao entrar na cena
         end
     elseif phase == "did" then
         if somLigado then
             somChannel = audio.play(somPag3, {
                 loops = -1
-            })
+            }) -- Reproduz o som se estiver ligado
         end
-        Runtime:addEventListener("touch", touchListener)
     end
 end
 
--- hide()
 function scene:hide(event)
     local phase = event.phase
-
     if phase == "will" then
         if somChannel then
-            audio.pause(somChannel)
+            audio.pause(somChannel) -- Pausa o som ao sair da cena
         end
-        Runtime:removeEventListener("touch", touchListener)
     end
 end
 
--- destroy()
 function scene:destroy(event)
     if somChannel then
-        audio.dispose(somChannel)
+        audio.dispose(somChannel) -- Libera o canal de áudio
     end
     if somPag3 then
-        audio.dispose(somPag3)
+        audio.dispose(somPag3) -- Libera o som
     end
 end
 
