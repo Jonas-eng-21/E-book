@@ -22,6 +22,61 @@ local function showInfo(event)
     return true
 end
 
+local function playVideo(videoPath, sceneGroup, infoText)
+    -- Criar um vídeo sobreposto
+    local video = native.newVideo(display.contentCenterX, display.contentCenterY, 300, 200)
+    video:load(videoPath)
+    video:play()
+
+    -- Remover o vídeo ao término
+    video:addEventListener("video", function(event)
+        if event.phase == "ended" then
+            video:removeSelf()
+            display.remove(infoText) -- Remover mensagem após o vídeo
+        end
+    end)
+
+    -- Adicionar vídeo ao grupo de cena
+    sceneGroup:insert(video)
+end
+
+local function showInfoAndPlayVideo(event)
+    if event.phase == "ended" then
+        local organism = event.target
+        local infoText = display.newText({
+            text = organism.info,
+            x = display.contentCenterX,
+            y = display.contentHeight - 100,
+            width = display.contentWidth - 40,
+            font = native.systemFont,
+            fontSize = 18,
+            align = "center"
+        })
+        infoText:setFillColor(0, 0, 0)
+
+        -- Associar vídeo com base na imagem
+        local videoPaths = {
+            ["Assets/imagens/planta.png"] = "Assets/videos/PlantaFzdFotossinteze.mp4",
+            ["Assets/imagens/animal.png"] = "Assets/videos/OncaNaFloresta.mp4",
+            ["Assets/imagens/fungo.png"] = "Assets/videos/fungoacao.mp4",
+            ["Assets/imagens/microrganismos.png"] = "Assets/videos/microorganismoVideo.mp4"
+        }
+
+        local videoPath = videoPaths[organism.filename]
+        if videoPath then
+            playVideo(videoPath, scene.view, infoText)
+        end
+
+        -- Remover a mensagem após 3 segundos, caso o vídeo não seja reproduzido
+        timer.performWithDelay(3000, function()
+            if infoText and infoText.removeSelf then
+                infoText:removeSelf()
+            end
+        end)
+    end
+    return true
+end
+
 function scene:create(event)
     local sceneGroup = self.view
 
@@ -44,7 +99,10 @@ function scene:create(event)
     Voltar.x = display.contentCenterX - 300
     Voltar.y = display.contentHeight - 100
     Voltar:addEventListener("tap", function()
-        composer.gotoScene("Capa", { effect = "fromLeft", time = 1000 })
+        composer.gotoScene("Capa", {
+            effect = "fromLeft",
+            time = 1000
+        })
     end)
 
     local button = display.newImageRect(sceneGroup, "Assets/imagens/off.png", 60, 60)
@@ -105,14 +163,14 @@ function scene:create(event)
     }}
 
     for i, org in ipairs(organisms) do
-
         local icon = display.newImageRect(sceneGroup, org.filename, 120, 120)
         icon.x = org.x
         icon.y = org.y
 
         icon.info = org.info
+        icon.filename = org.filename
 
-        icon:addEventListener("touch", showInfo)
+        icon:addEventListener("touch", showInfoAndPlayVideo)
 
         local label = display.newText({
             parent = sceneGroup,

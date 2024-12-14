@@ -6,6 +6,7 @@ local seeds = {}
 local polinators = {}
 local seedVelocity = 20
 local touchListenerAdded = false -- Controle do listener
+local treeOffsetX = 0 -- Controle do deslocamento no eixo X
 
 -- Função para criar o cenário degradado
 local function createBackground(sceneGroup)
@@ -35,9 +36,12 @@ local function launchSeed(event)
         function seed:collision(event)
             if event.phase == "began" then
                 if event.other.name == "ground" then
+                    -- Adicionar deslocamento no eixo X
+                    treeOffsetX = treeOffsetX + math.random(-200, 200)
+
                     -- Criar uma árvore
                     local tree = display.newImageRect(scene.view, "Assets/imagens/arvore.png", 200, 220)
-                    tree.x = seed.x
+                    tree.x = seed.x + treeOffsetX
                     tree.y = seed.y - 120
 
                     -- Remover semente
@@ -107,26 +111,26 @@ function scene:create(event)
     -- Criar o solo
     createGround(sceneGroup)
 
-  -- Botões de navegação
-  local Avancar = display.newImageRect(sceneGroup, "Assets/imagens/botaoProximo.png", 141, 50)
-  Avancar.x = display.contentCenterX + 300
-  Avancar.y = display.contentHeight - 100
-  Avancar:addEventListener("tap", function()
-      composer.gotoScene("ContraCapa", {
-          effect = "fromRight",
-          time = 1000
-      })
-  end)
+    -- Botões de navegação
+    local Avancar = display.newImageRect(sceneGroup, "Assets/imagens/botaoProximo.png", 141, 50)
+    Avancar.x = display.contentCenterX + 300
+    Avancar.y = display.contentHeight - 100
+    Avancar:addEventListener("tap", function()
+        composer.gotoScene("ContraCapa", {
+            effect = "fromRight",
+            time = 1000
+        })
+    end)
 
-  local Voltar = display.newImageRect(sceneGroup, "Assets/imagens/botaoAnterior.png", 141, 50)
-  Voltar.x = display.contentCenterX - 300
-  Voltar.y = display.contentHeight - 100
-  Voltar:addEventListener("tap", function()
-      composer.gotoScene("Page04", {
-          effect = "fromLeft",
-          time = 1000
-      })
-  end)
+    local Voltar = display.newImageRect(sceneGroup, "Assets/imagens/botaoAnterior.png", 141, 50)
+    Voltar.x = display.contentCenterX - 300
+    Voltar.y = display.contentHeight - 100
+    Voltar:addEventListener("tap", function()
+        composer.gotoScene("Page04", {
+            effect = "fromLeft",
+            time = 1000
+        })
+    end)
 
     local button = display.newImageRect(sceneGroup, "Assets/imagens/off.png", 60, 60)
     button.x = 70

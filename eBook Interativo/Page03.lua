@@ -1,8 +1,12 @@
+-- Ativar multiTouch
+system.activate("multitouch")
+
 local composer = require("composer")
 local scene = composer.newScene()
 
 -- Variáveis globais para som e controle
 local somPag3, somLigado, somChannel
+local touches = {} -- Armazena toques simultâneos
 
 -- Adiciona a flor e a massa na tela
 function scene:create(event)
@@ -80,46 +84,58 @@ function scene:create(event)
     scene.massa.fermentacaoAtiva = false
 end
 
--- Listener de toque duplo simultâneo
-local function onDoubleTap(event)
-    if event.numTaps == 2 then
-        -- Polinizar a flor
-        if scene.flor and not scene.flor.isPolinizada then
-            scene.flor.isPolinizada = true
-            local bee = display.newImageRect(scene.view, "Assets/imagens/bee.png", 40, 40)
-            bee.x, bee.y = scene.flor.x, scene.flor.y
-            transition.to(bee, {
-                y = bee.y - 50,
-                alpha = 0,
-                time = 1000,
-                onComplete = function()
-                    bee:removeSelf()
-                    scene.flor:setFillColor(0.5, 1, 0.5) -- Flor polinizada
-                end
-            })
+-- Listener para multiTouch
+touchListener = function(event)
+    if event.phase == "began" then
+        touches[event.id] = true -- Armazena o toque
+
+        -- Verifica se existem dois toques ativos simultaneamente
+        local touchCount = 0
+        for _ in pairs(touches) do
+            touchCount = touchCount + 1
         end
 
-        -- Ativar fermentação na massa
-        if scene.massa and not scene.massa.fermentacaoAtiva then
-            scene.massa.fermentacaoAtiva = true
-            scene.massa:scale(1.5, 1.5) -- Crescimento da massa
-            local message = display.newText({
-                text = "A fermentação está ativa!",
-                x = display.contentCenterX,
-                y = display.contentHeight - 150,
-                font = native.systemFontBold,
-                fontSize = 24
-            })
-            message:setFillColor(0, 0.8, 0)
-            scene.view:insert(message)
-            transition.to(message, {
-                alpha = 0,
-                time = 2000,
-                onComplete = function()
-                    message:removeSelf()
-                end
-            })
+        if touchCount == 2 then
+            -- Ativar eventos de polinização e fermentação
+            if scene.flor and not scene.flor.isPolinizada then
+                scene.flor.isPolinizada = true
+                local bee = display.newImageRect(scene.view, "Assets/imagens/bee.png", 40, 40)
+                bee.x, bee.y = scene.flor.x, scene.flor.y
+                transition.to(bee, {
+                    y = bee.y - 50,
+                    alpha = 0,
+                    time = 1000,
+                    onComplete = function()
+                        bee:removeSelf()
+                        scene.flor:setFillColor(0.5, 1, 0.5) -- Flor polinizada
+                    end
+                })
+            end
+
+            if scene.massa and not scene.massa.fermentacaoAtiva then
+                scene.massa.fermentacaoAtiva = true
+                scene.massa:scale(1.5, 1.5) -- Crescimento da massa
+                local message = display.newText({
+                    text = "A fermentação e a polinização ocorreram!",
+                    x = display.contentCenterX,
+                    y = display.contentHeight - 150,
+                    font = native.systemFontBold,
+                    fontSize = 24
+                })
+                message:setFillColor(0, 0.8, 0)
+                scene.view:insert(message)
+                transition.to(message, {
+                    alpha = 0,
+                    time = 2000,
+                    onComplete = function()
+                        message:removeSelf()
+                    end
+                })
+            end
         end
+
+    elseif event.phase == "ended" or event.phase == "cancelled" then
+        touches[event.id] = nil -- Remove o toque
     end
     return true
 end
@@ -139,7 +155,7 @@ function scene:show(event)
                 loops = -1
             })
         end
-        Runtime:addEventListener("tap", onDoubleTap)
+        Runtime:addEventListener("touch", touchListener)
     end
 end
 
@@ -151,7 +167,7 @@ function scene:hide(event)
         if somChannel then
             audio.pause(somChannel)
         end
-        Runtime:removeEventListener("tap", onDoubleTap)
+        Runtime:removeEventListener("touch", touchListener)
     end
 end
 
